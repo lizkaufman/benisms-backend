@@ -2,7 +2,7 @@ service: nice-ben
 
 custom:
   settings:
-    BENISMS_TABLE: benismsTable
+    BENISMS_TABLE: benisms-table
 
 provider:
   name: aws
@@ -30,10 +30,47 @@ functions:
           path: /list
           method: get
           cors: true
-  createBenism: #post request
+  getBenism: #get specific benism by id
+    handler: handler.getBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: get
+          cors: true
+  addBenism: #post request
     handler: handler.addBenism
     events:
       - http:
-          path: /add
+          path: /list
           method: post
           cors: true
+  updateBenism: #updates whole Benism by id (put req)
+    handler: handler.updateBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: put
+          cors: true
+  deleteBenism: #delete Benism by id
+    handler: handler.deleteBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: delete
+          cors: true
+
+resources:
+  Resources:
+    OrgTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        ProvisionedThroughput: #gives it units to read/write (how AWS tracks and charges)
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.BENISMS_TABLE}
