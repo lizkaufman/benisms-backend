@@ -1,0 +1,76 @@
+service: nice-ben
+
+custom:
+  settings:
+    BENISMS_TABLE: benisms-table
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  environment: ${self:custom.settings} #self refers to the file itself (so we're saying get the settings for the environment from this file itself)
+  region: eu-west-1 #ireland
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - dynamodb:DescribeTable #to know metadata about the table
+        - dynamodb:Scan #gets multiple items (like a get req)
+        - dynamodb:GetItem #gets one item
+        - dynamodb:PutItem #adds one item
+        - dynamodb:UpdateItem #like a patch req
+        - dynamodb:DeleteItem #deletes
+      Resource:
+        'arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.BENISMS_TABLE}'
+        #arn = amazon resource name, then specify dynamodb, then use self to point to region in file, then use self again to point to the table declared earlier in this file
+
+functions:
+  getAllBenisms: #get all
+    handler: handler.getAllBenisms
+    events:
+      - http:
+          path: /list
+          method: get
+          cors: true
+  getBenism: #get specific benism by id
+    handler: handler.getBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: get
+          cors: true
+  addBenism: #post request
+    handler: handler.addBenism
+    events:
+      - http:
+          path: /list
+          method: post
+          cors: true
+  updateBenism: #updates whole Benism by id (put req)
+    handler: handler.updateBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: put
+          cors: true
+  deleteBenism: #delete Benism by id
+    handler: handler.deleteBenism
+    events:
+      - http:
+          path: /list/{id}
+          method: delete
+          cors: true
+
+resources:
+  Resources:
+    OrgTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        ProvisionedThroughput: #gives it units to read/write (how AWS tracks and charges)
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.BENISMS_TABLE}
